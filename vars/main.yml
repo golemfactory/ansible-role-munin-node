@@ -1,0 +1,2 @@
+munin_node_final_disable_plugins: "{{ lookup('vars', *lookup('varnames', '^munin_node_disable_plugins', wantlist=True)) | flatten }}"
+munin_node_final_enable_plugins: "{{ lookup('vars', *lookup('varnames', '^munin_node_enable_plugins', wantlist=True)) | flatten }}"

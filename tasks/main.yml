@@ -1,0 +1,102 @@
+- name: Install munin-node
+  package:
+    name: munin-node
+    state: present
+
+- name: Set host_name
+  lineinfile:
+    path: /etc/munin/munin-node.conf
+    regexp: '^#?host_name '
+    line: "host_name {{ munin_node_host_name }}"
+  notify: Restart munin-node
+
+- name: Listen on localhost
+  when: munin_node_over_ssh or munin_node_host == "localhost"
+  lineinfile:
+    path: /etc/munin/munin-node.conf
+    regexp: '^host '
+    line: host 127.0.0.1
+  notify: Restart munin-node
+
+- name: Setup connection over ssh
+  when: munin_node_over_ssh
+  block:
+    - name: Set munin shell to rbash
+      user:
+        name: munin
+        shell: /bin/rbash
+
+    - name: Create ~munin/.ssh dir
+      file:
+        path: /var/lib/munin/.ssh
+        state: directory
+        mode: "0700"
+        owner: munin
+        group: munin
+
+    - name: Setup authorized_keys
+      copy:
+        dest: /var/lib/munin/.ssh/authorized_keys
+        content: "restrict,from=\"{{ munin_node_server_public_ip }}\",command=\"nc localhost 4949\" {{ lookup('file', 'munin_server_id_rsa.pub') }}\n"
+        owner: munin
+        group: munin
+
+    - name: Add node to servers known_hosts
+      delegate_to: munin
+      known_hosts:
+        path: /etc/ssh/ssh_known_hosts
+        name: "{{ munin_node_host }}"
+        key: "{{ munin_node_host }} ecdsa-sha2-nistp256 {{ ansible_ssh_host_key_ecdsa_public }}"
+      # avoid race condition on access to the file
+      throttle: 1
+
+- name: Add node to munin server
+  delegate_to: munin
+  template:
+    src: host_config.j2
+    dest: "/etc/munin/munin-conf.d/{{ munin_node_host_name }}.conf"
+
+- name: Disable plugins
+  loop: "{{ munin_node_final_disable_plugins | product(['plugins', 'plugin-conf.d']) | list }}"
+  file:
+    path: "/etc/munin/{{ item[1] }}/{{ item[0] }}"
+    state: absent
+  notify: Restart munin-node
+
+- name: Install plugin dependencies
+  apt:
+    name: "{{ munin_node_final_enable_plugins | map(attribute='deps', default=[]) | flatten }}"
+
+- name: Install custom plugins
+  loop: "{{ munin_node_final_enable_plugins }}"
+  when: item.custom | default(False)
+  copy:
+    src: "{{ item.template_base | default(item.name) }}"
+    dest: /usr/local/share/munin/plugins/
+    mode: '0755'
+
+- name: Link plugins
+  loop: "{{ munin_node_final_enable_plugins }}"
+  file:
+    path: "/etc/munin/plugins/{{ item.name }}"
+    state: link
+    src: "/usr{{ item.custom | default(False) | ternary('/local', '') }}/share/munin/plugins/{{ item.template_base | default(item.name) }}"
+    force: yes
+  notify: Restart munin-node
+
+- name: Configure plugins
+  loop: "{{ munin_node_final_enable_plugins }}"
+  when: item.config is defined
+  template:
+    src: plugin_config.j2
+    dest: "/etc/munin/plugin-conf.d/{{ item.name }}"
+  notify: Restart munin-node
+
+- name: Configure cron
+  loop: "{{ munin_node_final_enable_plugins }}"
+  when: item.cron is defined
+  cron:
+    name: "{{ item.name }}"
+    hour: "{{ item.cron.hour }}"
+    minute: "{{ item.cron.minute }}"
+    job: "/usr/sbin/munin-run {{ item.name }} cron"

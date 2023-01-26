@@ -1,0 +1,41 @@
+munin_node_over_ssh: no
+# set this when munin_node_over_ssh
+#munin_node_server_public_ip:
+
+# groups in server config http://guide.munin-monitoring.org/en/latest/reference/munin.conf.html#node-definitions
+munin_node_groups: []
+
+# in case ansible_host is meaningless on remote machines
+munin_node_host: "{{ ansible_host }}"
+# if the server is accessible only by IP and you want to give it a name
+munin_node_host_name: "{{ ansible_host }}"
+
+# For variables munin_node_(en|dis)able_plugins
+# you can define multiple variables with custom suffixes.
+# They will all get merged.
+# This way you can define config for groups.
+
+# list of strings: ['a', 'b']
+munin_node_disable_plugins: []
+
+# list of objects
+# - name: foo_bar
+#   # template_base in optional
+#   template_base: foo_
+#   # custom is optional
+#   # if yes, it'll be installed from local files
+#   custom: yes
+#   # deps is optional
+#   # it's a list of dependencies required by plugin
+#   deps:
+#     - something
+#     - python3-somelib
+#   # config is optional
+#   config:
+#     var1: value1
+#     var2: value2
+#   # cron is optional
+#   cron:
+#     hour: 5
+#     minute: 15
+munin_node_enable_plugins: []

@@ -1,0 +1,2 @@
+[{{ ";".join(munin_node_groups + [munin_node_host_name]) }}]
+    address {{ munin_node_over_ssh | ternary('ssh://', '') }}{{ munin_node_host }}
