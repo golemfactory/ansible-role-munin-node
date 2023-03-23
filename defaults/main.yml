@@ -5,10 +5,11 @@ munin_node_over_ssh: no
 # groups in server config http://guide.munin-monitoring.org/en/latest/reference/munin.conf.html#node-definitions
 munin_node_groups: []
 
-# in case ansible_host is meaningless on remote machines
-munin_node_host: "{{ ansible_host }}"
-# if the server is accessible only by IP and you want to give it a name
-munin_node_host_name: "{{ ansible_host }}"
+# address for munin server
+munin_node_host: "{{ hostvars[inventory_hostname]['ansible_host'] | default(inventory_hostname) }}"
+# if the node is accessible only by IP and you want to give it a name
+munin_node_host_name: "{{ munin_node_host }}"
+# why not use 'ansible_host' directly: https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-get-the-original-ansible-host-when-i-delegate-a-task
 
 # For variables munin_node_(en|dis)able_plugins
 # you can define multiple variables with custom suffixes.

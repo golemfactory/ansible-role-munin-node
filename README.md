@@ -15,8 +15,8 @@ Server connection:
 
 Server config:
 - `munin_node_groups`: Groups in server config: http://guide.munin-monitoring.org/en/latest/reference/munin.conf.html#node-definitions
-- `munin_node_host`: Hostname or IP used by munin server to connect. Default: `{{ ansible_host }}`.
-- `munin_node_host_name`: Gives a custom name for the node, independent from `munin_node_host`. Default: `{{ ansible_host }}`.
+- `munin_node_host`: Hostname or IP used by munin server to connect. Default: `{{ ansible_host | default(inventory_hostname) }}`.
+- `munin_node_host_name`: Gives a custom name for the node, independent from `munin_node_host`. Default: `{{ munin_node_host }}`.
 
 Node plugins:
 - `munin_node_disable_plugins`: List of plugins to disable. Elements are strings with plugin names.
