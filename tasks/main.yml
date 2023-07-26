@@ -21,11 +21,6 @@
 - name: Setup connection over ssh
   when: munin_node_over_ssh
   block:
-    - name: Set munin shell to rbash
-      user:
-        name: munin
-        shell: /bin/rbash
-
     - name: Create ~munin/.ssh dir
       file:
         path: /var/lib/munin/.ssh
